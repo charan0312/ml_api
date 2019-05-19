@@ -1,7 +1,7 @@
 # Dependencies
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 from sklearn.externals import joblib
-import traceback
+import traceback, json
 import pandas as pd
 import numpy as np
 
@@ -10,28 +10,62 @@ app = Flask(__name__)
 
 
 @app.route('/')
-def hello():
-    return "Welcome Charan"
+def home():
+    return render_template('home.html')
 
-@app.route('/predict', methods=['POST'])
+@app.route('/about/')
+def about():
+    return render_template('about.html')
+
+
+#@app.route('/predict', methods=['POST'])
+#def predict():
+#    if lr:
+#        try:
+#            json_ = request.json
+#            print(json_)
+#            query = pd.get_dummies(pd.DataFrame(json_))
+#            query = query.reindex(columns=model_columns, fill_value=0)
+#
+#            prediction = list(lr.predict(query))
+#
+#            return jsonify({'prediction': str(prediction)})
+#
+#        except:
+#
+#            return jsonify({'trace': traceback.format_exc()})
+#    else:
+#        print ('Train the model first')
+#        return ('No model here to use')
+    
+
+@app.route('/predict',methods=['POST'])
 def predict():
-    if lr:
-        try:
-            json_ = request.json
-            print(json_)
-            query = pd.get_dummies(pd.DataFrame(json_))
-            query = query.reindex(columns=model_columns, fill_value=0)
-
-            prediction = list(lr.predict(query))
-
-            return jsonify({'prediction': str(prediction)})
-
-        except:
-
-            return jsonify({'trace': traceback.format_exc()})
-    else:
-        print ('Train the model first')
-        return ('No model here to use')
+    if request.method == 'POST':
+        if lr:
+            try:
+                comment = request.form['features']
+                data = comment.split()
+                d = {}
+                d['Age'] = int(data[0])
+                d['Sex'] = data[1]
+                d['Embarked'] = data[2]
+                json_ = [json.dumps(d)]
+                query = pd.get_dummies(pd.DataFrame(json_))
+                query = query.reindex(columns=model_columns, fill_value=0)
+                
+                my_prediction = lr.predict(query)
+                
+                #return jsonify({'prediction': str(my_prediction)})
+                return render_template('result.html',prediction = my_prediction, s = json_)
+                
+            except:
+            
+                return jsonify({'trace': traceback.format_exc()})
+        else:
+            print ('Train the model first')
+            return ('No model here to use')
+        #return render_template('result.html',prediction = my_prediction)
 
 if __name__ == '__main__':
     try:
